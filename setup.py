@@ -32,6 +32,7 @@ setup(
     license="BSD (3 clause)",
     description='A simple Python library for easily displaying tabular data in a visually appealing ASCII table format',
     long_description=fread('README.rst'),
+    long_description_content_type='text/x-rst',
     author='Luke Maurits',
     author_email='luke@maurits.id.au',
     maintainer='Maarten',
