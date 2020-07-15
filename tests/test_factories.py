@@ -78,10 +78,26 @@ class CsvConstructorTest_fmtparams(BasicTests, CsvConstructorTest):
         self.x = from_csv(self.fp, lineterminator="\n")
 
 
+class CsvDataMissingColumnsTest(unittest.TestCase):
+    def testFailingConstructor(self):
+        self.fp = StringIO(textwrap.dedent("""\
+            name, value, optional
+            John, 10000, 50
+            Sam, 12000
+            Patrick, 9999, 10
+        """))
+        try:
+            self.x = from_csv(self.fp, lineterminator="\n")
+            assert False
+        except:
+            assert True
+
+
 class CsvConstructorTest_Fieldnames(BasicTests, CsvConstructorTest):
     def setUp(self):
         CsvConstructorTest.setUp(self)
         self.x = from_csv(self.fp, field_names=("City", "Area", "Population", "Annual Rainfall"))
+
 
 if __name__ == '__main__':
     unittest.main()

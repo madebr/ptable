@@ -2,8 +2,8 @@
 # coding=UTF-8
 
 from prettytable import PrettyTable
-from prettytable import ALL, MSWORD_FRIENDLY, NONE
-from prettytable import from_csv, from_db_cursor, from_html, from_html_one
+from prettytable import RuleStyle, TableStyle
+from prettytable import from_db_cursor, from_html, from_html_one
 from prettytable.prettytable import DEFAULT, RANDOM
 
 try:
@@ -12,7 +12,6 @@ try:
 except ImportError:
     _have_sqlite = False
 
-from io import StringIO
 from math import pi, e, sqrt
 import textwrap
 import unittest
@@ -120,13 +119,18 @@ class OptionOverrideTests(CityDataTest):
 
     def testHrulesAll(self):
         default = self.x.get_string()
-        override = self.x.get_string(hrules=ALL)
+        override = self.x.get_string(hrules=RuleStyle.ALL)
         self.assertTrue(default != override)
 
     def testHrulesNone(self):
         default = self.x.get_string()
-        override = self.x.get_string(hrules=NONE)
+        override = self.x.get_string(hrules=RuleStyle.NONE)
         self.assertTrue(default != override)
+
+    def testRemoveRow(self):
+        rc = self.x.rowcount
+        self.x.del_row(0)
+        assert self.x.rowcount + 1 == rc
 
 
 class OptionAttributeTests(CityDataTest):
@@ -184,6 +188,47 @@ class BasicTests(CityDataTest):
         lengths = set(lengths)
         self.assertEqual(len(lengths), 1)
 
+    def testAddWrongSizedColumn(self):
+        try:
+            self.x.add_column("nb", list(range(self.x.rowcount-1)))
+            assert False
+        except:
+            assert True
+
+    def testClearRows(self):
+        self.x.clear_rows()
+        assert self.x.rowcount == 0
+        assert self.x.colcount > 0
+        assert len(self.x.field_names) > 0
+
+    def testClear(self):
+        self.x.clear()
+        assert self.x.rowcount == 0
+        assert self.x.colcount == 0
+        assert len(self.x.field_names) == 0
+
+    def testCopy(self):
+        str_x = self.x.get_string()
+        y = self.x.copy()
+        assert y.get_string() == str_x
+        y.clear()
+        assert self.x.get_string() == str_x
+        assert y.get_string() != str_x
+
+    def testSubTable(self):
+        x3 = self.x[3]
+        assert isinstance(x3, PrettyTable)
+        assert x3.field_names == self.x.field_names
+        assert x3.colcount == self.x.colcount
+        assert x3.rowcount == 1
+
+    def testWrongItem(self):
+        try:
+            x3 = self.x["3"]
+            assert False
+        except:
+            assert True
+
 
 class TitleBasicTests(BasicTests):
     """Run the basic tests with a title"""
@@ -214,7 +259,7 @@ class HrulesNoneBasicTests(BasicTests):
 
     def setUp(self):
         BasicTests.setUp(self)
-        self.x.hrules = NONE
+        self.x.hrules = RuleStyle.NONE
 
 
 class HrulesAllBasicTests(BasicTests):
@@ -222,7 +267,7 @@ class HrulesAllBasicTests(BasicTests):
 
     def setUp(self):
         BasicTests.setUp(self)
-        self.x.hrules = ALL
+        self.x.hrules = RuleStyle.ALL
 
 
 class EmptyTableTests(unittest.TestCase):
@@ -231,6 +276,13 @@ class EmptyTableTests(unittest.TestCase):
     def setUp(self):
         CityDataTest.setUp(self)
         self.y = PrettyTable()
+
+    def testRemoveRow(self):
+        try:
+            self.y.del_row(0)
+            assert False
+        except:
+            assert True
 
     def testAttributes(self):
         assert self.y.rowcount == 0
@@ -247,8 +299,76 @@ class EmptyTableTests(unittest.TestCase):
     def testInteractionWithBorder(self):
         assert self.y.get_string(border=False, print_empty=True) == ""
 
+    def testPrintEmptyFalseConstructor(self):
+        t = PrettyTable(print_empty=False)
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            """).strip())
 
-class EmptyTableTestsFieldNames(unittest.TestCase):
+    def testPrintEmptyTrueConstructorNoheader(self):
+        t = PrettyTable(header=False, print_empty=True)
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            ++
+            ++
+            """).strip())
+
+    def testPrintEmptyTrueConstructorHeader(self):
+        t = PrettyTable(header=True, print_empty=True)
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            ++
+            ||
+            ++
+            ++
+            """).strip())
+
+
+class TableSortTest(unittest.TestCase):
+    def createTable(self, **kwargs):
+        t = PrettyTable(field_names=("c1", "c2"), header=False, sortby="c2", **kwargs)
+        t.add_row([1, 9])
+        t.add_row([2, 8])
+        t.add_row([3, 7])
+        t.add_row([4, 6])
+        t.add_row([5, 5])
+        return t
+
+    def testSort(self):
+        t = self.createTable()
+        result = t.get_string(padding_width=0)
+        self.assertEqual(result, textwrap.dedent("""\
+            +-+-+
+            |5|5|
+            |4|6|
+            |3|7|
+            |2|8|
+            |1|9|
+            +-+-+
+            """).strip())
+
+    def testOldsortsliceFalse(self):
+        t = self.createTable(start=1, end=3, oldsortslice=False)
+        result = t.get_string(padding_width=0)
+        self.assertEqual(result, textwrap.dedent("""\
+            +-+-+
+            |4|6|
+            |3|7|
+            +-+-+
+            """).strip())
+
+    def testOldsortsliceTrue(self):
+        t = self.createTable(start=1, end=3, oldsortslice=True)
+        result = t.get_string(padding_width=0)
+        self.assertEqual(result, textwrap.dedent("""\
+            +-+-+
+            |3|7|
+            |2|8|
+            +-+-+
+            """).strip())
+
+
+class EmptyTableTestsFieldNames(CityDataTest):
     """Make sure the print_empty option works"""
 
     def setUp(self):
@@ -288,7 +408,7 @@ class PresetBasicTests(BasicTests):
 
     def setUp(self):
         BasicTests.setUp(self)
-        self.x.set_style(MSWORD_FRIENDLY)
+        self.x.set_style(TableStyle.MSWORD_FRIENDLY)
 
 
 class RandomStyleTests(BasicTests):
@@ -445,7 +565,7 @@ class BreakLineTests(unittest.TestCase):
         t = PrettyTable(['Field 1', 'Field 2'])
         t.add_row(['value 1', 'value2\nsecond line'])
         t.add_row(['value 3', 'value4'])
-        result = t.get_string(hrules=ALL)
+        result = t.get_string(hrules=RuleStyle.ALL)
         assert result.strip() == textwrap.dedent("""\
             +---------+-------------+
             | Field 1 |   Field 2   |
@@ -460,7 +580,7 @@ class BreakLineTests(unittest.TestCase):
         t = PrettyTable(['Field 1', 'Field 2'])
         t.add_row(['value 1', 'value2\nsecond line'])
         t.add_row(['value 3\n\nother line', 'value4\n\n\nvalue5'])
-        result = t.get_string(hrules=ALL)
+        result = t.get_string(hrules=RuleStyle.ALL)
         assert result.strip() == textwrap.dedent("""\
             +------------+-------------+
             |  Field 1   |   Field 2   |
@@ -496,7 +616,7 @@ class BreakLineTests(unittest.TestCase):
         t = PrettyTable(['Field 1', 'Field 2'])
         t.add_row(['value 1', 'value2\nsecond line'])
         t.add_row(['value 3', 'value4'])
-        result = t.get_html_string(hrules=ALL)
+        result = t.get_html_string(hrules=RuleStyle.ALL)
         assert result.strip() == textwrap.dedent("""\
             <table>
                 <thead>
@@ -518,6 +638,32 @@ class BreakLineTests(unittest.TestCase):
             </table>
             """).strip()
 
+    def testXHtml(self):
+        t = PrettyTable(['Field 1', 'Field 2'], xhtml=True)
+        t.add_row(['value 1', 'value2\nsecond line'])
+        t.add_row(['value 3', 'value4'])
+        result = t.get_html_string(hrules=RuleStyle.ALL)
+        self.assertEqual(result.strip(), textwrap.dedent("""\
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field 1</th>
+                        <th>Field 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>value 1</td>
+                        <td>value2<br/>second line</td>
+                    </tr>
+                    <tr>
+                        <td>value 3</td>
+                        <td>value4</td>
+                    </tr>
+                </tbody>
+            </table>
+            """).strip())
+
 
 class MaxMaxWidthsTests(unittest.TestCase):
     def testMaxTableWidthIsTheLaw(self):
@@ -533,7 +679,7 @@ class MaxMaxWidthsTests(unittest.TestCase):
             'python/django-extensions:1.6.1',
         ]
         t.add_row(['allmychanges.com', ', '.join(versions)])
-        result = t.get_string(hrules=ALL)
+        result = t.get_string(hrules=RuleStyle.ALL)
         lines = result.strip().split('\n')
 
         for line in lines:
@@ -558,7 +704,7 @@ class MaxMaxWidthsTests(unittest.TestCase):
         # to not wrap it's content
         t._min_width['tag'] = len('allmychanges.com')
 
-        result = t.get_string(hrules=ALL)
+        result = t.get_string(hrules=RuleStyle.ALL)
         lines = result.strip().split('\n')
 
         for line in lines:
@@ -637,6 +783,35 @@ class HtmlOutputTests(unittest.TestCase):
             </table>
             """).strip()
 
+    def testTitle(self):
+        t = PrettyTable(['Field 1', 'Field 2'], title="Important data")
+        t.add_row(['value 1', 'value2'])
+        t.add_row(['value 3', 'value4'])
+        result = t.get_html_string(hrules=RuleStyle.ALL)
+        self.assertEqual(result.strip(), textwrap.dedent("""\
+            <table>
+                <tr>
+                    <td colspan=2>Important data</td>
+                </tr>
+                <thead>
+                    <tr>
+                        <th>Field 1</th>
+                        <th>Field 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>value 1</td>
+                        <td>value2</td>
+                    </tr>
+                    <tr>
+                        <td>value 3</td>
+                        <td>value4</td>
+                    </tr>
+                </tbody>
+            </table>
+            """).strip())
+
 
 if _have_sqlite:
     class DatabaseConstructorTest(BasicTests):
@@ -674,6 +849,34 @@ class HtmlConstructorTest(CityDataTest):
         html_string = self.x.get_html_string()
         html_string += self.x.get_html_string()
         self.assertRaises(Exception, from_html_one, html_string)
+
+
+class JunctionCharTest(unittest.TestCase):
+    def get_table(self, **kwargs):
+        t = PrettyTable(header=False, **kwargs)
+        t.add_row("ab")
+        t.add_row("cd")
+        return t
+
+    def testDefaultJunction(self):
+        t = self.get_table()
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +---+---+
+            | a | b |
+            | c | d |
+            +---+---+""").strip())
+        self.assertEqual(t.junction_char, "+")
+
+    def testCustomJuction_char(self):
+        t = self.get_table(junction_char="#")
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            #---#---#
+            | a | b |
+            | c | d |
+            #---#---#""").strip())
+        self.assertEqual(t.junction_char, "#")
 
 
 class PrintEnglishTest(CityDataTest):
@@ -725,6 +928,105 @@ class PrintEnglishTest(CityDataTest):
         print(self.y)
 
 
+class HAlignTest(unittest.TestCase):
+    def setUp(self):
+        t = PrettyTable(header=False, field_names=("c1", "c2", "c3"))
+        t.add_row(["aaaaa", "a",     "a"])
+        t.add_row(["aaaa", "aaa",   "aa"])
+        t.add_row(["aaa", "aaaaa", "aaa"])
+        t.add_row(["aa",   "aaa", "aaaa"])
+        t.add_row(["a",    "a" , "aaaaa"])
+        t.align["c1"] = "l"
+        t.align["c2"] = "c"
+        t.align["c3"] = "r"
+        self.x = t
+
+    def testString(self):
+        result = self.x.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +-------+-------+-------+
+            | aaaaa |   a   |     a |
+            | aaaa  |  aaa  |    aa |
+            | aaa   | aaaaa |   aaa |
+            | aa    |  aaa  |  aaaa |
+            | a     |   a   | aaaaa |
+            +-------+-------+-------+""").strip())
+
+
+class HeaderStyleTest(unittest.TestCase):
+    def get_table(self, **kwargs):
+        t = PrettyTable(field_names=("colUMn oNe", "cOlumn twO"), **kwargs)
+        return t
+
+    def testNoHeaderStyle(self):
+        t = self.get_table()
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | colUMn oNe | cOlumn twO |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, None)
+
+    def testSetHeaderStyle(self):
+        t = self.get_table()
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | colUMn oNe | cOlumn twO |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, None)
+        t.header_style = "title"
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | Column One | Column Two |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, "title")
+
+    def testHeaderStyleCap(self):
+        t = self.get_table(header_style="cap")
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | Column one | Column two |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, "cap")
+
+    def testHeaderStyleTitle(self):
+        t = self.get_table(header_style="title")
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | Column One | Column Two |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, "title")
+
+    def testHeaderStyleLower(self):
+        t = self.get_table(header_style="lower")
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | column one | column two |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, "lower")
+
+    def testHeaderStyleUpper(self):
+        t = self.get_table(header_style="upper")
+        result = t.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            +------------+------------+
+            | COLUMN ONE | COLUMN TWO |
+            +------------+------------+
+            +------------+------------+""").strip())
+        self.assertEqual(t.header_style, "upper")
+
+
 class PrintJapaneseTest(unittest.TestCase):
     def setUp(self):
         self.x = PrettyTable(["Kanji", "Hiragana", "English"])
@@ -743,11 +1045,15 @@ class PrintJapaneseTest(unittest.TestCase):
 
 
 class UnpaddedTableTest(unittest.TestCase):
+    def create_table(self, *args, **kwargs):
+        res = PrettyTable(*args, header=False, padding_width=0, **kwargs)
+        res.add_row("abc")
+        res.add_row("def")
+        res.add_row("g..")
+        return res
+
     def setUp(self):
-        self.x = PrettyTable(header=False, padding_width=0)
-        self.x.add_row("abc")
-        self.x.add_row("def")
-        self.x.add_row("g..")
+        self.x = self.create_table()
 
     def testUnbordered(self):
         self.x.border = False
@@ -767,6 +1073,15 @@ class UnpaddedTableTest(unittest.TestCase):
             |d|e|f|
             |g|.|.|
             +-+-+-+
+            """).strip())
+
+    def testBorderConstructor(self):
+        p = self.create_table(border=False)
+        result = p.get_string()
+        self.assertEqual(result, textwrap.dedent("""\
+            abc
+            def
+            g..
             """).strip())
 
 
