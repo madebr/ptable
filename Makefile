@@ -10,7 +10,7 @@ test:
 	@nosetests --with-coverage --cover-package=$(PACKAGE_NAME) --cover-min-percentage=$(COVER_PERC)
 
 .PHONY: clean
-clean: clean-pyc clean-build clean-cover
+clean: clean-pyc clean-build clean-cover clean-docs
 
 .PHONY: clean-build
 clean-build:
@@ -39,6 +39,10 @@ opencover: coverage
 .PHONY: make-docs
 make-docs:
 	$(MAKE) -C docs html
+
+.PHONY: clean-docs
+clean-docs:
+	$(MAKE) -C docs clean
 
 .PHONY: develop
 develop:
