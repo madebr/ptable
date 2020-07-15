@@ -42,6 +42,7 @@ class PrettyTable(object):
 
         Arguments:
 
+        align - default align for each column (None, "l", "c" or "r")
         encoding - Unicode encoding scheme used to decode any encoded input
         title - optional table title
         field_names - list or tuple of field names
