@@ -35,5 +35,6 @@
 __version__ = "0.9.2"
 
 from .prettytable import PrettyTable
-from .prettytable import ALL, HEADER, MSWORD_FRIENDLY, NONE, PLAIN_COLUMNS
+from .prettytable import RuleStyle, ALL, HEADER, NONE
+from .prettytable import TableStyle, MSWORD_FRIENDLY, PLAIN_COLUMNS
 from .factory import from_csv, from_db_cursor, from_html, from_html_one

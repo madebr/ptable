@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import copy
+import enum
 import html
 import math
 import random
@@ -8,17 +9,21 @@ import textwrap
 import unicodedata
 
 
-# hrule styles
-FRAME = 0
-ALL = 1
-NONE = 2
-HEADER = 3
+# rule styles
+class RuleStyle(enum.Enum):
+    FRAME = 0
+    ALL = 1
+    NONE = 2
+    HEADER = 3
+
 
 # Table styles
-DEFAULT = 10
-MSWORD_FRIENDLY = 11
-PLAIN_COLUMNS = 12
-RANDOM = 20
+class TableStyle(enum.Enum):
+    DEFAULT = 10
+    MSWORD_FRIENDLY = 11
+    PLAIN_COLUMNS = 12
+    RANDOM = 20
+
 
 _re = re.compile("\033\[[0-9;]*m")
 
@@ -107,8 +112,8 @@ class PrettyTable(object):
             self._border = kwargs["border"]
         else:
             self._border = True
-        self._hrules = kwargs["hrules"] or FRAME
-        self._vrules = kwargs["vrules"] or ALL
+        self._hrules = kwargs["hrules"] or RuleStyle.FRAME
+        self._vrules = kwargs["vrules"] or RuleStyle.ALL
 
         self._sortby = kwargs["sortby"] or None
         if kwargs["reversesort"] in (True, False):
@@ -329,13 +334,13 @@ class PrettyTable(object):
 
     def _validate_hrules(self, name, val):
         try:
-            assert val in (ALL, FRAME, HEADER, NONE)
+            assert val in (RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.HEADER, RuleStyle.NONE)
         except AssertionError:
             raise Exception("Invalid value for %s!  Must be ALL, FRAME, HEADER or NONE." % name)
 
     def _validate_vrules(self, name, val):
         try:
-            assert val in (ALL, FRAME, NONE)
+            assert val in (RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.NONE)
         except AssertionError:
             raise Exception("Invalid value for %s!  Must be ALL, FRAME, or NONE." % name)
 
@@ -859,13 +864,13 @@ class PrettyTable(object):
 
     def set_style(self, style):
 
-        if style == DEFAULT:
+        if style == TableStyle.DEFAULT:
             self._set_default_style()
-        elif style == MSWORD_FRIENDLY:
+        elif style == TableStyle.MSWORD_FRIENDLY:
             self._set_msword_style()
-        elif style == PLAIN_COLUMNS:
+        elif style == TableStyle.PLAIN_COLUMNS:
             self._set_columns_style()
-        elif style == RANDOM:
+        elif style == TableStyle.RANDOM:
             self._set_random_style()
         else:
             raise Exception("Invalid pre-set style!")
@@ -874,8 +879,8 @@ class PrettyTable(object):
 
         self.header = True
         self.border = True
-        self._hrules = FRAME
-        self._vrules = ALL
+        self._hrules = RuleStyle.FRAME
+        self._vrules = RuleStyle.ALL
         self.padding_width = 1
         self.left_padding_width = 1
         self.right_padding_width = 1
@@ -887,7 +892,7 @@ class PrettyTable(object):
 
         self.header = True
         self.border = True
-        self._hrules = NONE
+        self._hrules = RuleStyle.NONE
         self.padding_width = 1
         self.left_padding_width = 1
         self.right_padding_width = 1
@@ -906,8 +911,8 @@ class PrettyTable(object):
         # Just for fun!
         self.header = random.choice((True, False))
         self.border = random.choice((True, False))
-        self._hrules = random.choice((ALL, FRAME, HEADER, NONE))
-        self._vrules = random.choice((ALL, FRAME, NONE))
+        self._hrules = random.choice((RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.HEADER, RuleStyle.NONE))
+        self._vrules = random.choice((RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.NONE))
         self.left_padding_width = random.randint(0, 5)
         self.right_padding_width = random.randint(0, 5)
         self.vertical_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
@@ -1004,7 +1009,7 @@ class PrettyTable(object):
         return self._unicode(value)
 
     def _compute_table_width(self, options):
-        table_width = 2 if options["vrules"] in (FRAME, ALL) else 0
+        table_width = 2 if options["vrules"] in (RuleStyle.FRAME, RuleStyle.ALL) else 0
         per_col_padding = sum(self._get_padding_widths(options))
         for index, fieldname in enumerate(self.field_names):
             if not options["fields"] or (options["fields"] and fieldname in options["fields"]):
@@ -1039,7 +1044,7 @@ class PrettyTable(object):
                 # space we can't shrink.
 
                 # Space for vrules
-                nonshrinkable = 2 if options["vrules"] in (FRAME, ALL) else 0
+                nonshrinkable = 2 if options["vrules"] in (RuleStyle.FRAME, RuleStyle.ALL) else 0
                 # Space for vrules between columns
                 nonshrinkable += len(self._field_names) - 1
                 # Space for padding in each column
@@ -1069,7 +1074,7 @@ class PrettyTable(object):
         if self._min_table_width or options["title"]:
             if options["title"]:
                 title_width = len(options["title"]) + sum(self._get_padding_widths(options))
-                if options["vrules"] in (FRAME, ALL):
+                if options["vrules"] in (RuleStyle.FRAME, RuleStyle.ALL):
                     title_width += 2
             else:
                 title_width = 0
@@ -1165,7 +1170,7 @@ class PrettyTable(object):
         # Add header or top of border
         if options["header"]:
             lines.extend(self._stringify_header(options).split('\n'))
-        elif options["border"] and options["hrules"] in (ALL, FRAME):
+        elif options["border"] and options["hrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
             lines.append(self._hrule)
 
         # Add rows
@@ -1173,7 +1178,7 @@ class PrettyTable(object):
             lines.append(self._stringify_row(row, options))
 
         # Add bottom of border
-        if options["border"] and options["hrules"] == FRAME:
+        if options["border"] and options["hrules"] == RuleStyle.FRAME:
             lines.append(self._hrule)
         return lines
 
@@ -1211,7 +1216,7 @@ class PrettyTable(object):
         if not options["border"]:
             return ""
         lpad, rpad = self._get_padding_widths(options)
-        if options['vrules'] in (ALL, FRAME):
+        if options['vrules'] in (RuleStyle.ALL, RuleStyle.FRAME):
             bits = [options["junction_char"]]
         else:
             bits = [options["horizontal_char"]]
@@ -1223,11 +1228,11 @@ class PrettyTable(object):
             if options["fields"] and field not in options["fields"]:
                 continue
             bits.append((width + lpad + rpad) * options["horizontal_char"])
-            if options['vrules'] == ALL:
+            if options['vrules'] == RuleStyle.ALL:
                 bits.append(options["junction_char"])
             else:
                 bits.append(options["horizontal_char"])
-        if options["vrules"] == FRAME:
+        if options["vrules"] == RuleStyle.FRAME:
             bits.pop()
             bits.append(options["junction_char"])
         return "".join(bits)
@@ -1237,14 +1242,14 @@ class PrettyTable(object):
         lines = []
         lpad, rpad = self._get_padding_widths(options)
         if options["border"]:
-            if options["vrules"] == ALL:
-                options["vrules"] = FRAME
+            if options["vrules"] == RuleStyle.ALL:
+                options["vrules"] = RuleStyle.FRAME
                 lines.append(self._stringify_hrule(options))
-                options["vrules"] = ALL
-            elif options["vrules"] == FRAME:
+                options["vrules"] = RuleStyle.ALL
+            elif options["vrules"] == RuleStyle.FRAME:
                 lines.append(self._stringify_hrule(options))
         bits = []
-        endpoint = options["vertical_char"] if options["vrules"] in (ALL, FRAME) else " "
+        endpoint = options["vertical_char"] if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME) else " "
         bits.append(endpoint)
         title = " " * lpad + title + " " * rpad
         bits.append(self._justify(title, len(self._hrule) - 2, "c"))
@@ -1257,16 +1262,16 @@ class PrettyTable(object):
         bits = []
         lpad, rpad = self._get_padding_widths(options)
         if options["border"]:
-            if options["hrules"] in (ALL, FRAME):
+            if options["hrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
                 bits.append(self._hrule)
                 bits.append("\n")
-            if options["vrules"] in (ALL, FRAME):
+            if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
                 bits.append(options["vertical_char"])
             else:
                 bits.append(" ")
         # For tables with no data or field names
         if not self._field_names:
-            if options["vrules"] in (ALL, FRAME):
+            if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
                 bits.append(options["vertical_char"])
             else:
                 bits.append(" ")
@@ -1285,16 +1290,16 @@ class PrettyTable(object):
                 fieldname = field
             bits.append(" " * lpad + self._justify(fieldname, width, self._align[field]) + " " * rpad)
             if options["border"]:
-                if options["vrules"] == ALL:
+                if options["vrules"] == RuleStyle.ALL:
                     bits.append(options["vertical_char"])
                 else:
                     bits.append(" ")
         # If vrules is FRAME, then we just appended a space at the end
         # of the last field, when we really want a vertical character
-        if options["border"] and options["vrules"] == FRAME:
+        if options["border"] and options["vrules"] == RuleStyle.FRAME:
             bits.pop()
             bits.append(options["vertical_char"])
-        if options["border"] and options["hrules"] != NONE:
+        if options["border"] and options["hrules"] != RuleStyle.NONE:
             bits.append("\n")
             bits.append(self._hrule)
         return "".join(bits)
@@ -1324,7 +1329,7 @@ class PrettyTable(object):
         for y in range(0, row_height):
             bits.append([])
             if options["border"]:
-                if options["vrules"] in (ALL, FRAME):
+                if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
                     bits[y].append(self.vertical_char)
                 else:
                     bits[y].append(" ")
@@ -1349,7 +1354,7 @@ class PrettyTable(object):
 
                 bits[y].append(" " * lpad + self._justify(l, width, self._align[field]) + " " * rpad)
                 if options["border"]:
-                    if options["vrules"] == ALL:
+                    if options["vrules"] == RuleStyle.ALL:
                         bits[y].append(self.vertical_char)
                     else:
                         bits[y].append(" ")
@@ -1358,11 +1363,11 @@ class PrettyTable(object):
         # If vrules is FRAME, then we just appended a space at the end
         # of the last field, when we really want a vertical character
         for y in range(0, row_height):
-            if options["border"] and options["vrules"] == FRAME:
+            if options["border"] and options["vrules"] == RuleStyle.FRAME:
                 bits[y].pop()
                 bits[y].append(options["vertical_char"])
 
-        if options["border"] and options["hrules"] == ALL:
+        if options["border"] and options["hrules"] == RuleStyle.ALL:
             bits[row_height - 1].append("\n")
             bits[row_height - 1].append(self._hrule)
 
@@ -1408,7 +1413,7 @@ class PrettyTable(object):
         kwargs['header'] = True
         kwargs['border'] = True
         kwargs['junction_char'] = '|'
-        kwargs['hrules'] = HEADER
+        kwargs['hrules'] = RuleStyle.HEADER
         lines = self._prepare_lines(**kwargs)
         return self._unicode("\n").join(lines)
 
@@ -1431,7 +1436,7 @@ class PrettyTable(object):
         kwargs['title'] = None
         kwargs['header'] = True
         kwargs['border'] = True
-        kwargs['hrules'] = ALL
+        kwargs['hrules'] = RuleStyle.ALL
         lines = self._prepare_lines(**kwargs)
         # line-0 is _hrule, line-1 is header, line-2 is _hrule
         if len(lines) >= 3:
@@ -1538,19 +1543,19 @@ class PrettyTable(object):
         open_tag = list()
         open_tag.append("<table")
         if options["border"]:
-            if options["hrules"] == ALL and options["vrules"] == ALL:
+            if options["hrules"] == RuleStyle.ALL and options["vrules"] == RuleStyle.ALL:
                 open_tag.append(" frame=\"box\" rules=\"all\"")
-            elif options["hrules"] == FRAME and options["vrules"] == FRAME:
+            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.FRAME:
                 open_tag.append(" frame=\"box\"")
-            elif options["hrules"] == FRAME and options["vrules"] == ALL:
+            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.ALL:
                 open_tag.append(" frame=\"box\" rules=\"cols\"")
-            elif options["hrules"] == FRAME:
+            elif options["hrules"] == RuleStyle.FRAME:
                 open_tag.append(" frame=\"hsides\"")
-            elif options["hrules"] == ALL:
+            elif options["hrules"] == RuleStyle.ALL:
                 open_tag.append(" frame=\"hsides\" rules=\"rows\"")
-            elif options["vrules"] == FRAME:
+            elif options["vrules"] == RuleStyle.FRAME:
                 open_tag.append(" frame=\"vsides\"")
-            elif options["vrules"] == ALL:
+            elif options["vrules"] == RuleStyle.ALL:
                 open_tag.append(" frame=\"vsides\" rules=\"cols\"")
         if options["attributes"]:
             for attr_name in options["attributes"]:
@@ -1643,3 +1648,15 @@ def _char_block_width(char):
 
 def _str_block_width(val):
     return sum(map(_char_block_width, map(ord, _re.sub("", val))))
+
+
+# Available for compatibility
+FRAME = RuleStyle.FRAME
+ALL = RuleStyle.ALL
+NONE = RuleStyle.NONE
+HEADER = RuleStyle.HEADER
+
+DEFAULT = TableStyle.DEFAULT
+MSWORD_FRIENDLY = TableStyle.MSWORD_FRIENDLY
+PLAIN_COLUMNS = TableStyle.PLAIN_COLUMNS
+RANDOM = TableStyle.RANDOM
