@@ -3,7 +3,7 @@ Table factories
 """
 import csv
 import html.parser
-from .prettytable import PrettyTable
+from .prettytable import PrettyTable, PrettyTableException
 
 
 def from_csv(fp, field_names=None, **kwargs):
@@ -15,9 +15,19 @@ def from_csv(fp, field_names=None, **kwargs):
     if fmtparams:
         reader = csv.reader(fp, **fmtparams)
     else:
-        dialect = csv.Sniffer().sniff(fp.read(1024))
-        fp.seek(0)
-        reader = csv.reader(fp, dialect)
+        first_lines = [fp.readline() for _ in range(4)]
+        dialect = csv.Sniffer().sniff("".join(first_lines))
+
+        def fp_iter():
+            for line in first_lines:
+                if line:
+                    yield line
+            while True:
+                line = fp.readline()
+                if not line:
+                    break
+                yield line
+        reader = csv.reader(fp_iter(), dialect)
 
     table = PrettyTable(**kwargs)
     if field_names:
@@ -47,7 +57,6 @@ class TableHandler(html.parser.HTMLParser):
         self.tables = []
         self.last_row = []
         self.rows = []
-        self.max_row_width = 0
         self.active = None
         self.last_content = ""
         self.is_last_row_header = False
@@ -73,7 +82,6 @@ class TableHandler(html.parser.HTMLParser):
         if tag == "tr":
             self.rows.append(
                 (self.last_row, self.is_last_row_header))
-            self.max_row_width = max(self.max_row_width, len(self.last_row))
             self.last_row = []
             self.is_last_row_header = False
         if tag == "table":
@@ -92,11 +100,6 @@ class TableHandler(html.parser.HTMLParser):
         """
         table = PrettyTable(**self.kwargs)
         for row in self.rows:
-            if len(row[0]) < self.max_row_width:
-                appends = self.max_row_width - len(row[0])
-                for i in range(1, appends):
-                    row[0].append("-")
-
             if row[1] is True:
                 self.make_fields_unique(row[0])
                 table.field_names = row[0]
@@ -135,7 +138,7 @@ def from_html_one(html_code, **kwargs):
     try:
         assert len(tables) == 1
     except AssertionError:
-        raise Exception("More than one <table> in provided HTML code!  Use from_html instead.")
+        raise PrettyTableException("More than one <table> in provided HTML code!  Use from_html instead.")
     return tables[0]
 
 
@@ -150,8 +153,11 @@ def from_md(md, **kwargs):
     content_rows = rows[2:]
     table = PrettyTable(**kwargs)
     table.field_names = split_md_row(title_row)
-    map(table.add_row, map(split_md_row,
-                           filter(lambda x: x, content_rows)))
+
+    for content_row in content_rows:
+        if not content_row:
+            continue
+        table.add_row(split_md_row(content_row))
     return table
 
 def strip_md_content(s):
