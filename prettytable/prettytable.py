@@ -11,10 +11,10 @@ import unicodedata
 
 # rule styles
 class RuleStyle(enum.Enum):
-    FRAME = 0
-    ALL = 1
-    NONE = 2
-    HEADER = 3
+    NONE = 0
+    FRAME = 1
+    HEADER = 2
+    ALL = 3
 
 
 # Table styles
@@ -33,6 +33,10 @@ def _get_size(text):
     height = len(lines)
     width = max([_str_block_width(line) for line in lines])
     return width, height
+
+
+class PrettyTableException(Exception):
+    pass
 
 
 class PrettyTable(object):
@@ -70,7 +74,7 @@ class PrettyTable(object):
         reversesort - True or False to sort in descending or ascending order
         oldsortslice - Slice rows before sorting in the "old style" """
 
-        self.encoding = kwargs.get("encoding", "UTF-8")
+        self.encoding = kwargs.get("encoding", "utf-8")
 
         # Data
         self._field_names = []
@@ -86,75 +90,70 @@ class PrettyTable(object):
         else:
             self._widths = []
 
-        # Options
-        self._options = "title start end fields header border sortby reversesort sort_key attributes format hrules vrules".split()
-        self._options.extend(
-            "int_format float_format min_table_width max_table_width padding_width left_padding_width right_padding_width".split())
-        self._options.extend(
-            "vertical_char horizontal_char junction_char header_style valign xhtml print_empty oldsortslice".split())
-        self._options.extend("align valign max_width min_width".split())
+        self._options = (
+            "title", "start", "end", "fields", "header", "border", "sortby", "reversesort", "sort_key",
+            "attributes", "format", "hrules", "vrules", "int_format", "float_format", "min_table_width",
+            "max_table_width", "padding_width", "left_padding_width", "right_padding_width", "vertical_char",
+            "horizontal_char", "junction_char", "header_style", "valign", "xhtml", "print_empty", "oldsortslice",
+            "align", "valign", "max_width", "min_width"
+        )
         for option in self._options:
             if option in kwargs:
                 self._validate_option(option, kwargs[option])
-            else:
-                kwargs[option] = None
 
-        self._title = kwargs["title"] or None
-        self._start = kwargs["start"] or 0
-        self._end = kwargs["end"] or None
-        self._fields = kwargs["fields"] or None
+        self._title = kwargs.get("title", None)
+        self._start = kwargs.get("start", 0)
+        self._end = kwargs.get("end", None)
+        self._fields = kwargs.get("fields", None)
 
-        if kwargs["header"] in (True, False):
+        if kwargs.get("header") in (True, False):
             self._header = kwargs["header"]
         else:
             self._header = True
-        self._header_style = kwargs["header_style"] or None
-        if kwargs["border"] in (True, False):
+        self._header_style = kwargs.get("header_style", None)
+        if kwargs.get("border") in (True, False):
             self._border = kwargs["border"]
         else:
             self._border = True
-        self._hrules = kwargs["hrules"] or RuleStyle.FRAME
-        self._vrules = kwargs["vrules"] or RuleStyle.ALL
+        self._hrules = kwargs.get("hrules", RuleStyle.FRAME)
+        self._vrules = kwargs.get("vrules", RuleStyle.ALL)
 
-        self._sortby = kwargs["sortby"] or None
-        if kwargs["reversesort"] in (True, False):
+        self._sortby = kwargs.get("sortby", None)
+        if kwargs.get("reversesort") in (True, False):
             self._reversesort = kwargs["reversesort"]
         else:
             self._reversesort = False
-        self._sort_key = kwargs["sort_key"] or (lambda x: x)
+        self._sort_key = kwargs.get("sort_key", lambda x: x)
 
         # Column specific arguments, use property.setters
-        self.align = kwargs["align"] or {}
-        self.valign = kwargs["valign"] or {}
-        self.max_width = kwargs["max_width"] or {}
-        self.min_width = kwargs["min_width"] or {}
-        self.int_format = kwargs["int_format"] or {}
-        self.float_format = kwargs["float_format"] or {}
+        self.align = kwargs.get("align", {})
+        self.valign = kwargs.get("valign", {})
+        self.max_width = kwargs.get("max_width", {})
+        self.min_width = kwargs.get("min_width", {})
+        self.int_format = kwargs.get("int_format", {})
+        self.float_format = kwargs.get("float_format", {})
 
-        self._min_table_width = kwargs["min_table_width"] or None
-        self._max_table_width = kwargs["max_table_width"] or None
-        if kwargs["padding_width"] is None:
-            self._padding_width = 1
-        else:
-            self._padding_width = kwargs["padding_width"]
-        self._left_padding_width = kwargs["left_padding_width"] or None
-        self._right_padding_width = kwargs["right_padding_width"] or None
+        self._min_table_width = kwargs.get("min_table_width", None)
+        self._max_table_width = kwargs.get("max_table_width", None)
+        self._padding_width = kwargs.get("padding_width", 1)
+        self._left_padding_width = kwargs.get("left_padding_width", None)
+        self._right_padding_width = kwargs.get("right_padding_width", None)
 
-        self._vertical_char = kwargs["vertical_char"] or self._unicode("|")
-        self._horizontal_char = kwargs["horizontal_char"] or self._unicode("-")
-        self._junction_char = kwargs["junction_char"] or self._unicode("+")
+        self._vertical_char = kwargs.get("vertical_char", self._unicode("|"))
+        self._horizontal_char = kwargs.get("horizontal_char", self._unicode("-"))
+        self._junction_char = kwargs.get("junction_char", self._unicode("+"))
 
-        if kwargs["print_empty"] in (True, False):
+        if kwargs.get("print_empty") in (True, False):
             self._print_empty = kwargs["print_empty"]
         else:
             self._print_empty = True
-        if kwargs["oldsortslice"] in (True, False):
+        if kwargs.get("oldsortslice") in (True, False):
             self._oldsortslice = kwargs["oldsortslice"]
         else:
             self._oldsortslice = False
-        self._format = kwargs["format"] or False
-        self._xhtml = kwargs["xhtml"] or False
-        self._attributes = kwargs["attributes"] or {}
+        self._format = kwargs.get("format", False)
+        self._xhtml = kwargs.get("xhtml", False)
+        self._attributes = kwargs.get("attributes", {})
 
     def _unicode(self, value):
         if not isinstance(value, str):
@@ -196,7 +195,6 @@ class PrettyTable(object):
             return 0
 
     def __getitem__(self, index):
-
         new = PrettyTable()
         new.field_names = self.field_names
         for attr in self._options:
@@ -208,7 +206,7 @@ class PrettyTable(object):
         elif isinstance(index, int):
             new.add_row(self._rows[index])
         else:
-            raise Exception("Index %s is invalid, must be an integer or slice" % str(index))
+            raise PrettyTableException("Index %s is invalid, must be an integer or slice" % str(index))
         return new
 
     def __str__(self):
@@ -226,149 +224,177 @@ class PrettyTable(object):
     # Secondly, in the _get_options method, where keyword arguments are mixed with persistent settings
 
     def _validate_option(self, option, val):
-        if option in ("field_names"):
+        if option in ("field_names",):
             self._validate_field_names(val)
-        elif option in ("start", "end", "max_width", "min_width", "min_table_width", "max_table_width", "padding_width",
-                        "left_padding_width", "right_padding_width", "format"):
+        elif option in ("start", "padding_width", "format"):
             self._validate_nonnegative_int(option, val)
-        elif option in ("sortby"):
+        elif option in ("end", "max_width", "min_width", "min_table_width", "max_table_width",
+                        "left_padding_width", "right_padding_width"):
+            self._validate_optional_nonnegative_int(option, val)
+        elif option in ("sortby",):
             self._validate_field_name(option, val)
-        elif option in ("sort_key"):
+        elif option in ("sort_key",):
             self._validate_function(option, val)
-        elif option in ("hrules"):
+        elif option in ("hrules",):
             self._validate_hrules(option, val)
-        elif option in ("vrules"):
+        elif option in ("vrules",):
             self._validate_vrules(option, val)
-        elif option in ("fields"):
+        elif option in ("fields",):
             self._validate_all_field_names(option, val)
-        elif option in ("header", "border", "reversesort", "xhtml", "print_empty", "oldsortslice"):
+        elif option in ("header", "border", "reversesort", "xhtml", "print_empty", "oldsortslice",):
             self._validate_true_or_false(option, val)
-        elif option in ("header_style"):
+        elif option in ("header_style",):
             self._validate_header_style(val)
-        elif option in ("int_format"):
+        elif option in ("int_format",):
             self._validate_int_format(option, val)
-        elif option in ("float_format"):
+        elif option in ("float_format",):
             self._validate_float_format(option, val)
-        elif option in ("vertical_char", "horizontal_char", "junction_char"):
+        elif option in ("vertical_char", "horizontal_char", "junction_char",):
             self._validate_single_char(option, val)
-        elif option in ("attributes"):
+        elif option in ("attributes",):
             self._validate_attributes(option, val)
+
+    def _validate_field_names_type(self, val):
+        # Check for appropriate type
+        try:
+            assert isinstance(val, (list, tuple))
+        except AssertionError:
+            raise PrettyTableException("Field names must be a list or tuple")
 
     def _validate_field_names(self, val):
         # Check for appropriate length
         if self._field_names:
-            try:
-                assert len(val) == len(self._field_names)
-            except AssertionError:
-                raise Exception("Field name list has incorrect number of values, (actual) %d!=%d (expected)" % (
-                len(val), len(self._field_names)))
+            if self._rows:
+                try:
+                    assert len(val) == len(self._field_names)
+                except AssertionError:
+                    raise PrettyTableException("Field name list has incorrect number of values, (actual) %d!=%d (expected)" % (
+                    len(val), len(self._field_names)))
         if self._rows:
             try:
                 assert len(val) == len(self._rows[0])
             except AssertionError:
-                raise Exception("Field name list has incorrect number of values, (actual) %d!=%d (expected)" % (
+                raise PrettyTableException("Field name list has incorrect number of values, (actual) %d!=%d (expected)" % (
                 len(val), len(self._rows[0])))
         # Check for uniqueness
         try:
             assert len(val) == len(set(val))
         except AssertionError:
-            raise Exception("Field names must be unique!")
+            raise PrettyTableException("Field names must be unique!")
 
     def _validate_header_style(self, val):
         try:
             assert val in ("cap", "title", "upper", "lower", None)
         except AssertionError:
-            raise Exception("Invalid header style, use cap, title, upper, lower or None!")
+            raise PrettyTableException("Invalid header style, use cap, title, upper, lower or None!")
 
     def _validate_align(self, val):
         try:
             assert val in ["l", "c", "r"]
         except AssertionError:
-            raise Exception("Alignment %s is invalid, use l, c or r!" % val)
+            raise PrettyTableException("Alignment %s is invalid, use l, c or r!" % val)
 
     def _validate_valign(self, val):
         try:
             assert val in ["t", "m", "b", None]
         except AssertionError:
-            raise Exception("Alignment %s is invalid, use t, m, b or None!" % val)
+            raise PrettyTableException("Alignment %s is invalid, use t, m, b or None!" % val)
 
     def _validate_nonnegative_int(self, name, val):
         try:
             assert int(val) >= 0
         except AssertionError:
-            raise Exception("Invalid value for {}: {}!".format(name, self._unicode(val)))
+            raise PrettyTableException("Invalid value for {}: {}!".format(name, self._unicode(val)))
+
+    def _validate_optional_nonnegative_int(self, name, val):
+        if val is not None:
+            self._validate_nonnegative_int(name, val)
 
     def _validate_true_or_false(self, name, val):
         try:
             assert val in (True, False)
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be True or False." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be True or False." % name)
 
     def _validate_int_format(self, name, val):
         if val == "":
             return
         try:
-            assert type(val) is str
-            assert val.isdigit()
+            assert re.match("[+-]? ?[0-9]+", val)
+            # assert isinstance(val, str)
+            # assert val[:1].isdigit() or val[:1] in "+-"
+            # if val[1:]:
+            #     assert val[1:].isdigit()
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be an integer format string." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be an integer format string." % name)
 
     def _validate_float_format(self, name, val):
         if val == "":
             return
         try:
-            val = val.rsplit('f')[0]
-            assert type(val) is str
-            assert "." in val
-            bits = val.split(".")
-            assert len(bits) <= 2
-            assert bits[0] == "" or bits[0].isdigit()
-            assert bits[1] == "" or bits[1].isdigit()
+            assert re.match(r"[+-]?(([0-9]+\.([0-9]*)?)|([0-9]?\.([0-9]*)+))", val)
+            # assert isinstance(val, str)
+            # val = val.rsplit('f')[0]
+            # assert "." in val
+            # assert val.count(".") <= 1
+            # bits = val.split(".")
+            # assert len(bits) <= 2
+            # assert bits[0] == "" or bits[0].isdigit()
+            # assert bits[1] == "" or bits[1].isdigit()
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be a float format string." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be a float format string." % name)
 
     def _validate_function(self, name, val):
         try:
             assert hasattr(val, "__call__")
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be a function." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be a function." % name)
 
     def _validate_hrules(self, name, val):
         try:
-            assert val in (RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.HEADER, RuleStyle.NONE)
+            assert val in (RuleStyle.NONE, RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.HEADER)
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be ALL, FRAME, HEADER or NONE." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be ALL, FRAME, HEADER or NONE." % name)
 
     def _validate_vrules(self, name, val):
         try:
-            assert val in (RuleStyle.ALL, RuleStyle.FRAME, RuleStyle.NONE)
+            assert val in (RuleStyle.NONE, RuleStyle.ALL, RuleStyle.FRAME)
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be ALL, FRAME, or NONE." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be ALL, FRAME, or NONE." % name)
 
     def _validate_field_name(self, name, val):
         try:
             assert (val in self._field_names) or (val is None)
         except AssertionError:
-            raise Exception("Invalid field name: %s!" % val)
+            raise PrettyTableException("Invalid field name: %s!" % val)
 
     def _validate_all_field_names(self, name, val):
-        try:
-            for x in val:
+        self._validate_field_names_type(val)
+        for x in val:
+            try:
                 self._validate_field_name(name, x)
+            except:
+                raise PrettyTableException("fields must be a sequence of field names!")
+
+    def _validate_equal_field_names(self, names):
+        try:
+            assert len(names) == len(self._field_names)
+            assert set(names) == set(self._field_names)
         except AssertionError:
-            raise Exception("fields must be a sequence of field names!")
+            raise PrettyTableException("Invalid field names")
+
 
     def _validate_single_char(self, name, val):
         try:
             assert _str_block_width(val) == 1
         except AssertionError:
-            raise Exception("Invalid value for %s!  Must be a string of length 1." % name)
+            raise PrettyTableException("Invalid value for %s!  Must be a string of length 1." % name)
 
     def _validate_attributes(self, name, val):
         try:
             assert isinstance(val, dict)
         except AssertionError:
-            raise Exception("attributes must be a dictionary of name/value pairs!")
+            raise PrettyTableException("attributes must be a dictionary of name/value pairs!")
 
     ##############################
     # ATTRIBUTE MANAGEMENT       #
@@ -381,25 +407,18 @@ class PrettyTable(object):
 
     @field_names.setter
     def field_names(self, val):
+        self._validate_field_names_type(val)
         val = [self._unicode(x) for x in val]
         self._validate_option("field_names", val)
-        if self._field_names:
-            old_names = self._field_names[:]
+        old_names = self._field_names[:]
         self._field_names = val
+        # FIXME: combine all column data into one object (name, valign, halign, int_format, float_format, min_width, max_width...)
         if self._align and old_names:
-            for old_name, new_name in zip(old_names, val):
-                self._align[new_name] = self._align[old_name]
-            for old_name in old_names:
-                if old_name not in self._align:
-                    self._align.pop(old_name)
+            self._align = {new_name: self._align[old_name] for old_name, new_name in zip(old_names, self._field_names)}
         else:
             self.align = "c"
         if self._valign and old_names:
-            for old_name, new_name in zip(old_names, val):
-                self._valign[new_name] = self._valign[old_name]
-            for old_name in old_names:
-                if old_name not in self._valign:
-                    self._valign.pop(old_name)
+            self._valign = {new_name: self._valign[old_name] for old_name, new_name in zip(old_names, self._field_names)}
         else:
             self.valign = "t"
 
@@ -439,9 +458,15 @@ class PrettyTable(object):
             for field in self._field_names:
                 self._valign[field] = "t"
         else:
-            self._validate_valign(val)
-            for field in self._field_names:
-                self._valign[field] = val
+            if isinstance(val, dict):
+                self._validate_equal_field_names(val.keys())
+                for field, val in val.items():
+                    self._validate_valign(val)
+                    self._valign[field] = val
+            else:
+                self._validate_valign(val)
+                for field in self._field_names:
+                    self._valign[field] = val
 
     @property
     def max_width(self):
@@ -473,11 +498,11 @@ class PrettyTable(object):
         result = {
             # minimum column width can't be lesser
             # than header's length
-            name: max(
+            field_name: max(
                 _str_block_width(str(name)),
                 self._min_width.get(name, 0)
             )
-            for name in fields
+            for field_name, name in zip(self._field_names, fields)
         }
         return result
 
@@ -684,9 +709,17 @@ class PrettyTable(object):
         if val is None or (isinstance(val, dict) and len(val) == 0):
             self._int_format = {}
         else:
-            self._validate_option("int_format", val)
-            for field in self._field_names:
-                self._int_format[field] = val
+            if isinstance(val, dict):
+                self._validate_equal_field_names(val.keys())
+                int_format = {}
+                for field, val in val.items():
+                    self._validate_option("int_format", val)
+                    int_format[field] = val
+                self._int_format = int_format
+            else:
+                self._validate_option("int_format", val)
+                for field in self._field_names:
+                    self._int_format[field] = val
 
     @property
     def float_format(self):
@@ -701,9 +734,17 @@ class PrettyTable(object):
         if val is None or (isinstance(val, dict) and len(val) == 0):
             self._float_format = {}
         else:
-            self._validate_option("float_format", val)
-            for field in self._field_names:
-                self._float_format[field] = val
+            if isinstance(val, dict):
+                self._validate_equal_field_names(val.keys())
+                float_format = {}
+                for field, val in val.items():
+                    self._validate_option("float_format", val)
+                    float_format[field] = val
+                self._float_format = float_format
+            else:
+                self._validate_option("float_format", val)
+                for field in self._field_names:
+                    self._float_format[field] = val
 
     @property
     def padding_width(self):
@@ -874,7 +915,7 @@ class PrettyTable(object):
         elif style == TableStyle.RANDOM:
             self._set_random_style()
         else:
-            raise Exception("Invalid pre-set style!")
+            raise PrettyTableException("Invalid pre-set style!")
 
     def _set_default_style(self):
 
@@ -934,7 +975,7 @@ class PrettyTable(object):
         has fields"""
 
         if self._field_names and len(row) != len(self._field_names):
-            raise Exception(
+            raise PrettyTableException(
                 "Row has incorrect number of values, (actual) %d!=%d (expected)" % (len(row), len(self._field_names)))
         if not self._field_names:
             self.field_names = [("Field %d" % (n + 1)) for n in range(0, len(row))]
@@ -949,7 +990,7 @@ class PrettyTable(object):
         row_index - The index of the row you want to delete.  Indexing starts at 0."""
 
         if row_index > len(self._rows) - 1:
-            raise Exception("Cant delete row at index %d, table only has %d rows!" % (row_index, len(self._rows)))
+            raise PrettyTableException("Cant delete row at index %d, table only has %d rows!" % (row_index, len(self._rows)))
         del self._rows[row_index]
 
     def add_column(self, fieldname, column, align="c", valign="t"):
@@ -975,7 +1016,7 @@ class PrettyTable(object):
                     self._rows.append([])
                 self._rows[i].append(column[i])
         else:
-            raise Exception("Column length %d does not match number of rows %d!" % (len(column), len(self._rows)))
+            raise PrettyTableException("Column length %d does not match number of rows %d!" % (len(column), len(self._rows)))
 
     def clear_rows(self):
 
@@ -1009,13 +1050,17 @@ class PrettyTable(object):
             value = self._unicode(("%%%sf" % self._float_format[field]) % value)
         return self._unicode(value)
 
-    def _compute_table_width(self, options):
+    def _compute_table_width(self, options, widths):
+        title_width = 0
+        if options["title"]:
+            title_width = len(options["title"]) + sum(self._get_padding_widths(options))
         table_width = 2 if options["vrules"] in (RuleStyle.FRAME, RuleStyle.ALL) else 0
+        table_width += max(len(self._field_names) - 1, 0) * (1 if options["vrules"] in (RuleStyle.ALL, ) else 0)
         per_col_padding = sum(self._get_padding_widths(options))
         for index, fieldname in enumerate(self.field_names):
             if not options["fields"] or (options["fields"] and fieldname in options["fields"]):
-                table_width += self._widths[index] + per_col_padding
-        return table_width
+                table_width += widths[index] + per_col_padding
+        return max((table_width, title_width))
 
     def _compute_widths(self, rows, options):
         if options["header"]:
@@ -1027,7 +1072,7 @@ class PrettyTable(object):
             for index, value in enumerate(row):
                 fieldname = self.field_names[index]
                 if fieldname in self.max_width:
-                    widths[index] = max(widths[index], min(_get_size(value)[0], self.max_width[fieldname]))
+                    widths[index] = max(widths[index], min((_get_size(value)[0], self.max_width[fieldname])))
                 else:
                     widths[index] = max(widths[index], _get_size(value)[0])
                 if fieldname in self.min_width:
@@ -1035,58 +1080,50 @@ class PrettyTable(object):
         self._widths = widths
 
         # Are we exceeding max_table_width?
-        if self._max_table_width:
-            table_width = self._compute_table_width(options)
-            if table_width > self._max_table_width:
-                # get dict with minimum widths for fields
-                min_width = self.min_width
+        if options["max_table_width"]:
+            table_width = self._compute_table_width(options, widths)
+            if table_width > options["max_table_width"]:
+                # first calculate width for paddings and vrules: space we can't shrink.
+                vrules_count = (2 if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME) else 0) + \
+                               max(len(self._field_names) - 1, 0) * (1 if options["vrules"] in (RuleStyle.ALL,) else 0)
+                padding_width = self.padding_width * len(self.field_names) * (2 if options["vrules"] in (RuleStyle.ALL,) else 1)
+                data_width = table_width - padding_width - vrules_count
 
-                # first calculate width for paddings and vrules this
-                # space we can't shrink.
+                # if max table with is too small, increase it a bit.
+                if options["max_table_width"] < vrules_count + padding_width:
+                    options["max_table_width"] = vrules_count + padding_width + len(rows)
 
-                # Space for vrules
-                nonshrinkable = 2 if options["vrules"] in (RuleStyle.FRAME, RuleStyle.ALL) else 0
-                # Space for vrules between columns
-                nonshrinkable += len(self._field_names) - 1
-                # Space for padding in each column
-                per_col_padding = sum(self._get_padding_widths(options))
-                nonshrinkable += len(widths) * per_col_padding
-                # Min space for each column
-                nonshrinkable += sum(min_width.values())
+                if data_width == 0:
+                    scale = 1.
+                else:
+                    scale = min(1., 1.0 * (options["max_table_width"] - padding_width - vrules_count) / data_width)
 
                 # Shrink widths in proportion
-                scale = float(self._max_table_width - nonshrinkable) / (table_width - nonshrinkable)
-
-                def calculate_new_width(field_name, old_width):
-                    width = min_width[field_name]
-                    # scale according to recalculated table width
-                    scaled_part = int(math.floor((old_width - width) * scale))
-                    # enforce minimum column width as 1 symbol
-                    return max(1, width + scaled_part)
-
-                widths = list(map(
-                    calculate_new_width,
-                    self._field_names,
-                    widths
-                ))
+                widths = [int(w * scale) for w in widths]
                 self._widths = widths
 
         # Are we under min_table_width or title width?
-        if self._min_table_width or options["title"]:
+        if options["min_table_width"] or options["title"]:
             if options["title"]:
                 title_width = len(options["title"]) + sum(self._get_padding_widths(options))
-                if options["vrules"] in (RuleStyle.FRAME, RuleStyle.ALL):
-                    title_width += 2
             else:
                 title_width = 0
-            min_table_width = self.min_table_width or 0
+            min_table_width = options["min_table_width"] or 0
             min_width = max(title_width, min_table_width)
-            table_width = self._compute_table_width(options)
+            table_width = self._compute_table_width(options, widths)
             if table_width < min_width:
                 # Grow widths in proportion
-                scale = 1.0 * min_width / table_width
+                vrules_count = (2 if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME) else 0) + \
+                               max(len(self._field_names) - 1, 0) * (1 if options["vrules"] in (RuleStyle.ALL, ) else 0)
+                extra_padding = self.padding_width * len(self.field_names) * (2 if options["vrules"] in (RuleStyle.ALL,) else 1)
+                data_width = table_width - extra_padding - vrules_count
+                if data_width == 0:
+                    scale = 1.
+                else:
+                    scale = 1.0 * (min_width - extra_padding - vrules_count) / data_width
                 widths = [int(math.ceil(w * scale)) for w in widths]
                 self._widths = widths
+        return widths
 
     def _get_padding_widths(self, options):
 
@@ -1160,13 +1197,13 @@ class PrettyTable(object):
         formatted_rows = self._format_rows(rows, options)
 
         # Compute column widths
-        self._compute_widths(formatted_rows, options)
-        self._hrule = self._stringify_hrule(options)
+        widths = self._compute_widths(formatted_rows, options)
+        self._hrule = self._stringify_hrule(widths, options)
 
         # Add title
-        title = options["title"] or self._title
-        if title:
-            lines.append(self._stringify_title(title, options))
+        title = options["title"]
+        if title is not None:
+            lines.append(self._stringify_title(title, widths, options))
 
         # Add header or top of border
         if options["header"]:
@@ -1176,7 +1213,7 @@ class PrettyTable(object):
 
         # Add rows
         for row in formatted_rows:
-            lines.append(self._stringify_row(row, options))
+            lines.append(self._stringify_row(row, widths, options))
 
         # Add bottom of border
         if options["border"] and options["hrules"] == RuleStyle.FRAME:
@@ -1212,7 +1249,7 @@ class PrettyTable(object):
         lines = self._prepare_lines(**kwargs)
         return self._unicode("\n").join(lines)
 
-    def _stringify_hrule(self, options):
+    def _stringify_hrule(self, widths, options):
 
         if not options["border"]:
             return ""
@@ -1223,9 +1260,12 @@ class PrettyTable(object):
             bits = [options["horizontal_char"]]
         # For tables with no data or fieldnames
         if not self._field_names:
-            bits.append(options["junction_char"])
+            if options['vrules'] in (RuleStyle.ALL, RuleStyle.FRAME):
+                bits.append(options["junction_char"])
+            else:
+                bits.append(options["horizontal_char"])
             return "".join(bits)
-        for field, width in zip(self._field_names, self._widths):
+        for field, width in zip(self._field_names, widths):
             if options["fields"] and field not in options["fields"]:
                 continue
             bits.append((width + lpad + rpad) * options["horizontal_char"])
@@ -1238,17 +1278,20 @@ class PrettyTable(object):
             bits.append(options["junction_char"])
         return "".join(bits)
 
-    def _stringify_title(self, title, options):
+    def _stringify_title(self, title, widths, options):
 
         lines = []
         lpad, rpad = self._get_padding_widths(options)
         if options["border"]:
-            if options["vrules"] == RuleStyle.ALL:
-                options["vrules"] = RuleStyle.FRAME
-                lines.append(self._stringify_hrule(options))
-                options["vrules"] = RuleStyle.ALL
-            elif options["vrules"] == RuleStyle.FRAME:
-                lines.append(self._stringify_hrule(options))
+            if options["hrules"] != RuleStyle.NONE:
+                if options["vrules"] == RuleStyle.ALL:
+                    options["vrules"] = RuleStyle.FRAME
+                    lines.append(self._stringify_hrule(widths, options))
+                    options["vrules"] = RuleStyle.ALL
+                elif options["vrules"] == RuleStyle.FRAME:
+                    lines.append(self._stringify_hrule(widths, options))
+                else:
+                    lines.append(self._stringify_hrule(widths, options))
         bits = []
         endpoint = options["vertical_char"] if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME) else " "
         bits.append(endpoint)
@@ -1259,7 +1302,6 @@ class PrettyTable(object):
         return "\n".join(lines)
 
     def _stringify_header(self, options):
-
         bits = []
         lpad, rpad = self._get_padding_widths(options)
         if options["border"]:
@@ -1305,9 +1347,9 @@ class PrettyTable(object):
             bits.append(self._hrule)
         return "".join(bits)
 
-    def _stringify_row(self, row, options):
+    def _stringify_row(self, row, widths, options):
 
-        for index, field, value, width, in zip(range(0, len(row)), self._field_names, row, self._widths):
+        for index, field, value, width, in zip(range(0, len(row)), self._field_names, row, widths):
             # Enforce max widths
             lines = value.split("\n")
             new_lines = []
@@ -1335,7 +1377,7 @@ class PrettyTable(object):
                 else:
                     bits[y].append(" ")
 
-        for field, value, width, in zip(self._field_names, row, self._widths):
+        for field, value, width, in zip(self._field_names, row, widths):
 
             valign = self._valign[field]
             lines = value.split("\n")
@@ -1492,13 +1534,13 @@ class PrettyTable(object):
         open_tag = list()
         open_tag.append("<table")
         if options["attributes"]:
-            for attr_name in options["attributes"]:
-                open_tag.append(" {}=\"{}\"".format(attr_name, options["attributes"][attr_name]))
+            for key, value in options["attributes"].items():
+                open_tag.append(" {}=\"{}\"".format(key, value))
         open_tag.append(">")
         lines.append("".join(open_tag))
 
         # Title
-        title = options["title"] or self._title
+        title = options["title"]
         if title:
             cols = len(options["fields"]) if options["fields"] else len(self.field_names)
             lines.append("    <tr>")
@@ -1565,7 +1607,7 @@ class PrettyTable(object):
         lines.append("".join(open_tag))
 
         # Title
-        title = options["title"] or self._title
+        title = options["title"]
         if title:
             cols = len(options["fields"]) if options["fields"] else len(self.field_names)
             lines.append("    <tr>")
