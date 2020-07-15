@@ -802,5 +802,32 @@ class PrintMarkdownAndRstTest(unittest.TestCase):
             """).strip())
 
 
+class BackwardCompatibilityTest(unittest.TestCase):
+    def testRuleStyleMainModule(self):
+        from prettytable import ALL, HEADER, NONE
+        assert isinstance(ALL.value, int)
+        assert isinstance(HEADER.value, int)
+        assert isinstance(NONE.value, int)
+
+    def testRuleStyleSubModule(self):
+        from prettytable.prettytable import ALL, FRAME, NONE, HEADER
+        assert isinstance(ALL.value, int)
+        assert isinstance(FRAME.value, int)
+        assert isinstance(NONE.value, int)
+        assert isinstance(HEADER.value, int)
+
+    def testTableStyleMainModule(self):
+        from prettytable import MSWORD_FRIENDLY, PLAIN_COLUMNS
+        assert isinstance(MSWORD_FRIENDLY.value, int)
+        assert isinstance(PLAIN_COLUMNS.value, int)
+
+    def testTableStyleSubModule(self):
+        from prettytable.prettytable import DEFAULT, MSWORD_FRIENDLY, PLAIN_COLUMNS, RANDOM
+        assert isinstance(DEFAULT.value, int)
+        assert isinstance(MSWORD_FRIENDLY.value, int)
+        assert isinstance(PLAIN_COLUMNS.value, int)
+        assert isinstance(RANDOM.value, int)
+
+
 if __name__ == "__main__":
     unittest.main()
