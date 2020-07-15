@@ -10,12 +10,12 @@ forked from `PTable <https://github.com/kxxoling/PTable/>`_.
     :target: https://travis-ci.org/madebr/ptable2
     :alt: Build Status
 
-.. image:: https://landscape.io/github/madebr/ptable2/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/madebr/ptable2/master
+.. image:: https://landscape.io/github/madebr/ptable2/develop/landscape.svg?style=flat
+    :target: https://landscape.io/github/madebr/ptable2/develop
     :alt: Code Health
 
-.. image:: https://coveralls.io/repos/github/madebr/ptable2/badge.svg?branch=master
-    :target: https://coveralls.io/github/madebr/ptable2?branch=master
+.. image:: https://coveralls.io/repos/github/madebr/ptable2/badge.svg?branch=develop
+    :target: https://coveralls.io/github/madebr/ptable2?branch=develop
     :alt: Coverage
 
 
