@@ -1,4 +1,3 @@
-.PHONY: all test
 COVERAGE_DIR = .cover
 COVER_PERC = 75
 PACKAGE_NAME = prettytable
