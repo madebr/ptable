@@ -11,7 +11,7 @@ jobs:
 
 install:
     - python -m pip install -r req-dev.txt
-    - python -m pip install flake8
+    - python -m pip install flake8 python-coveralls
 
 before_script:
     # stop the build if there are Python syntax errors or undefined names
@@ -20,4 +20,5 @@ before_script:
     - time flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
 script: make test
-after_success: coveralls
+after_success:
+    - coveralls
