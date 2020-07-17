@@ -1515,17 +1515,13 @@ class PrettyTable(object):
         xhtml - print <br/> tags if True, <br> tags if false"""
 
         options = self._get_options(kwargs)
-
-        if options["format"]:
-            string = self._get_formatted_html_string(options)
-        else:
-            string = self._get_simple_html_string(options)
-
+        string = self._get_simple_html_string(options)
         return string
 
     def _get_simple_html_string(self, options):
 
         lines = []
+        lpad, rpad = self._get_padding_widths(options)
         if options["xhtml"]:
             linebreak = "<br/>"
         else:
@@ -1533,6 +1529,26 @@ class PrettyTable(object):
 
         open_tag = list()
         open_tag.append("<table")
+        if options["format"] and options["border"]:
+            options.setdefault("attributes", {})
+            if options["hrules"] == RuleStyle.ALL and options["vrules"] == RuleStyle.ALL:
+                options["attributes"].setdefault("frame", "box")
+                options["attributes"].setdefault("rules", "all")
+            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.FRAME:
+                options["attributes"].setdefault("frame", "box")
+            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.ALL:
+                options["attributes"].setdefault("frame", "box")
+                options["attributes"].setdefault("rules", "cols")
+            elif options["hrules"] == RuleStyle.FRAME:
+                options["attributes"].setdefault("frame", "hsides")
+            elif options["hrules"] == RuleStyle.ALL:
+                options["attributes"].setdefault("frame", "hsides")
+                options["attributes"].setdefault("rules", "rows")
+            elif options["vrules"] == RuleStyle.FRAME:
+                options["attributes"].setdefault("frame", "vsides")
+            elif options["vrules"] == RuleStyle.ALL:
+                options["attributes"].setdefault("frame", "vsides")
+                options["attributes"].setdefault("rules", "cols")
         if options["attributes"]:
             for key, value in options["attributes"].items():
                 open_tag.append(" {}=\"{}\"".format(key, value))
@@ -1549,12 +1565,16 @@ class PrettyTable(object):
 
         # Headers
         if options["header"]:
+            header_item_attributes = ""
+            if options["format"]:
+                header_item_attributes = " style=\"padding-left: %dem; padding-right: %dem; text-align: center\"" % (
+                    lpad, rpad)
             lines.append("    <thead>")
             lines.append("        <tr>")
             for field in self._field_names:
                 if options["fields"] and field not in options["fields"]:
                     continue
-                lines.append("            <th>%s</th>" % html.escape(field).replace("\n", linebreak))
+                lines.append("            <th%s>%s</th>" % (header_item_attributes, html.escape(field).replace("\n", linebreak)))
             lines.append("        </tr>")
             lines.append("    </thead>")
 
@@ -1567,83 +1587,13 @@ class PrettyTable(object):
             for field, datum in zip(self._field_names, row):
                 if options["fields"] and field not in options["fields"]:
                     continue
-                lines.append("            <td>%s</td>" % html.escape(datum).replace("\n", linebreak))
-            lines.append("        </tr>")
-        lines.append("    </tbody>")
-        lines.append("</table>")
-
-        return self._unicode("\n").join(lines)
-
-    def _get_formatted_html_string(self, options):
-
-        lines = []
-        lpad, rpad = self._get_padding_widths(options)
-        if options["xhtml"]:
-            linebreak = "<br/>"
-        else:
-            linebreak = "<br>"
-
-        open_tag = list()
-        open_tag.append("<table")
-        if options["border"]:
-            if options["hrules"] == RuleStyle.ALL and options["vrules"] == RuleStyle.ALL:
-                open_tag.append(" frame=\"box\" rules=\"all\"")
-            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.FRAME:
-                open_tag.append(" frame=\"box\"")
-            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.ALL:
-                open_tag.append(" frame=\"box\" rules=\"cols\"")
-            elif options["hrules"] == RuleStyle.FRAME:
-                open_tag.append(" frame=\"hsides\"")
-            elif options["hrules"] == RuleStyle.ALL:
-                open_tag.append(" frame=\"hsides\" rules=\"rows\"")
-            elif options["vrules"] == RuleStyle.FRAME:
-                open_tag.append(" frame=\"vsides\"")
-            elif options["vrules"] == RuleStyle.ALL:
-                open_tag.append(" frame=\"vsides\" rules=\"cols\"")
-        if options["attributes"]:
-            for attr_name in options["attributes"]:
-                open_tag.append(" {}=\"{}\"".format(attr_name, options["attributes"][attr_name]))
-        open_tag.append(">")
-        lines.append("".join(open_tag))
-
-        # Title
-        title = options["title"]
-        if title:
-            cols = len(options["fields"]) if options["fields"] else len(self.field_names)
-            lines.append("    <tr>")
-            lines.append("            <td colspan=%d>%s</td>" % (cols, title))
-            lines.append("    </tr>")
-
-        # Headers
-        if options["header"]:
-            lines.append("    <thead>")
-            lines.append("        <tr>")
-            for field in self._field_names:
-                if options["fields"] and field not in options["fields"]:
-                    continue
-                lines.append(
-                    "            <th style=\"padding-left: %dem; padding-right: %dem; text-align: center\">%s</th>" % (
-                    lpad, rpad, html.escape(field).replace("\n", linebreak)))
-            lines.append("        </tr>")
-            lines.append("    </thead>")
-
-        # Data
-        lines.append("    <tbody>")
-        rows = self._get_rows(options)
-        formatted_rows = self._format_rows(rows, options)
-        aligns = []
-        valigns = []
-        for field in self._field_names:
-            aligns.append({"l": "left", "r": "right", "c": "center"}[self._align[field]])
-            valigns.append({"t": "top", "m": "middle", "b": "bottom"}[self._valign[field]])
-        for row in formatted_rows:
-            lines.append("        <tr>")
-            for field, datum, align, valign in zip(self._field_names, row, aligns, valigns):
-                if options["fields"] and field not in options["fields"]:
-                    continue
-                lines.append(
-                    "            <td style=\"padding-left: %dem; padding-right: %dem; text-align: %s; vertical-align: %s\">%s</td>" % (
-                    lpad, rpad, align, valign, html.escape(datum).replace("\n", linebreak)))
+                td_style = ""
+                if options["format"]:
+                    align = {"l": "left", "r": "right", "c": "center"}[self._align[field]]
+                    valign = {"t": "top", "m": "middle", "b": "bottom"}[self._valign[field]]
+                    td_style = " style=\"padding-left: %dem; padding-right: %dem; text-align: %s; vertical-align: %s\"" % (
+                        lpad, rpad, align, valign)
+                lines.append("            <td%s>%s</td>" % (td_style, html.escape(datum).replace("\n", linebreak)))
             lines.append("        </tr>")
         lines.append("    </tbody>")
         lines.append("</table>")
