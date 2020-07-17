@@ -1739,8 +1739,7 @@ class HtmlOutputTests(unittest.TestCase):
                         <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">value9</td>
                     </tr>
                 </tbody>
-            </table>
-            """).strip(), result.strip())
+            </table>"""), result)
 
     def testHtmlOutputFormatedXhtml(self):
         t = PrettyTable(['Field 1', 'Field 2', 'Field 3'], xhtml=True)
@@ -1748,7 +1747,7 @@ class HtmlOutputTests(unittest.TestCase):
         t.add_row(['value 4', 'value5\nvalue5b', 'value6'])
         t.add_row(['value 7', 'value8', 'value9'])
         result = t.get_html_string(format=True)
-        assert result.strip() == textwrap.dedent("""\
+        self.assertEqual(textwrap.dedent("""\
             <table frame="box" rules="cols">
                 <thead>
                     <tr>
@@ -1774,8 +1773,7 @@ class HtmlOutputTests(unittest.TestCase):
                         <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">value9</td>
                     </tr>
                 </tbody>
-            </table>
-            """).strip()
+            </table>"""), result)
 
     def testFormatedFieldsConstructor(self):
         t = PrettyTable(['Field 1', 'Field 2', 'Field 3'], format=True)
@@ -1787,7 +1785,7 @@ class HtmlOutputTests(unittest.TestCase):
         t.add_row(['value 4', 'value5\nvalue5b', 'value6'])
         t.add_row(['value 7', 'value8', 'value9'])
         result = t.get_html_string(format=True, fields=("Field 2", "Field 3"))
-        assert result.strip() == textwrap.dedent("""\
+        self.assertEqual(textwrap.dedent("""\
             <table frame="box" rules="cols">
                 <thead>
                     <tr>
@@ -1809,8 +1807,7 @@ class HtmlOutputTests(unittest.TestCase):
                         <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">value9</td>
                     </tr>
                 </tbody>
-            </table>
-            """).strip()
+            </table>"""), result)
 
     def testTitle(self):
         t = PrettyTable(['Field 1', 'Field 2'], title="Important data")
