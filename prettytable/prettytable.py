@@ -26,7 +26,7 @@ class TableStyle(enum.Enum):
     RANDOM = 20
 
 
-_re = re.compile("\033\[[0-9;]*m")
+_re = re.compile(r"\033\[[0-9;]*m")
 
 
 def _get_size(text):

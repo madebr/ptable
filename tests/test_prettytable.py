@@ -1775,6 +1775,106 @@ class HtmlOutputTests(unittest.TestCase):
                 </tbody>
             </table>"""), result)
 
+    def testHtmlOutputFormatedVrulesNONEHrulesNONE(self):
+        t = PrettyTable(["F1", "F2"])
+        t.add_row(["a1", "b1"])
+        t.add_row(["a2", "b2"])
+        result = t.get_html_string(vrules=RuleStyle.NONE, hrules=RuleStyle.NONE, format=True)
+        self.assertEqual(textwrap.dedent("""\
+            <table frame="void" rules="none">
+                <thead>
+                    <tr>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F1</th>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a1</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b1</td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a2</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b2</td>
+                    </tr>
+                </tbody>
+            </table>"""), result)
+
+    def testHtmlOutputFormatedVrulesNONEHrulesALL(self):
+        t = PrettyTable(["F1", "F2"])
+        t.add_row(["a1", "b1"])
+        t.add_row(["a2", "b2"])
+        result = t.get_html_string(vrules=RuleStyle.NONE, hrules=RuleStyle.ALL, format=True)
+        self.assertEqual(textwrap.dedent("""\
+            <table frame="hsides" rules="rows">
+                <thead>
+                    <tr>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F1</th>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a1</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b1</td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a2</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b2</td>
+                    </tr>
+                </tbody>
+            </table>"""), result)
+
+    def testHtmlOutputFormatedVrulesALLHrulesALL(self):
+        t = PrettyTable(["F1", "F2"])
+        t.add_row(["a1", "b1"])
+        t.add_row(["a2", "b2"])
+        result = t.get_html_string(vrules=RuleStyle.ALL, hrules=RuleStyle.ALL, format=True)
+        self.assertEqual(textwrap.dedent("""\
+            <table frame="box" rules="all">
+                <thead>
+                    <tr>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F1</th>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a1</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b1</td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a2</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b2</td>
+                    </tr>
+                </tbody>
+            </table>"""), result)
+
+    def testHtmlOutputFormatedVrulesALLHrulesNONE(self):
+        t = PrettyTable(["F1", "F2"])
+        t.add_row(["a1", "b1"])
+        t.add_row(["a2", "b2"])
+        result = t.get_html_string(vrules=RuleStyle.ALL, hrules=RuleStyle.NONE, format=True)
+        self.assertEqual(textwrap.dedent("""\
+            <table frame="vsides" rules="cols">
+                <thead>
+                    <tr>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F1</th>
+                        <th style="padding-left: 1em; padding-right: 1em; text-align: center">F2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a1</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b1</td>
+                    </tr>
+                    <tr>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">a2</td>
+                        <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">b2</td>
+                    </tr>
+                </tbody>
+            </table>"""), result)
+
     def testFormatedFieldsConstructor(self):
         t = PrettyTable(['Field 1', 'Field 2', 'Field 3'], format=True)
         self.assertEqual(True, t.format)
@@ -2709,6 +2809,62 @@ class PrintJapaneseTest(unittest.TestCase):
             +--------+------------+----------+
             """), stdout.getvalue())
 
+
+class TestControlChars(unittest.TestCase):
+    def testBackSpace_0x08(self):
+        t = PrettyTable(["F \b1"])
+        t.add_row(["a \b1"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | F \b1 |
+            +----+
+            | a \b1 |
+            +----+"""), result)
+
+    def testDelete_0x7F(self):
+        t = PrettyTable(["F \x7f1"])
+        t.add_row(["a \x7f1"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | F \x7f1 |
+            +----+
+            | a \x7f1 |
+            +----+"""), result)
+
+    def testNull_0x00(self):
+        t = PrettyTable(["F\x001"])
+        t.add_row(["a\x001"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | F\x001 |
+            +----+
+            | a\x001 |
+            +----+"""), result)
+
+    def testShiftIn_0x0F(self):
+        t = PrettyTable(["F\x0f1"])
+        t.add_row(["a\x0f1"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | F\x0f1 |
+            +----+
+            | a\x0f1 |
+            +----+"""), result)
+
+    def testUnitSeperator_0x1F(self):
+        t = PrettyTable(["F\x1f1"])
+        t.add_row(["a\x1f1"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | F\x1f1 |
+            +----+
+            | a\x1f1 |
+            +----+"""), result)
 
 
 class UnpaddedTableTest(unittest.TestCase):
