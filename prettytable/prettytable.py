@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import copy
+import collections
 import enum
 import html
 import math
@@ -1529,26 +1530,32 @@ class PrettyTable(object):
 
         open_tag = list()
         open_tag.append("<table")
+        options["attributes"] = collections.OrderedDict(options["attributes"])
         if options["format"] and options["border"]:
-            options.setdefault("attributes", {})
-            if options["hrules"] == RuleStyle.ALL and options["vrules"] == RuleStyle.ALL:
-                options["attributes"].setdefault("frame", "box")
-                options["attributes"].setdefault("rules", "all")
-            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.FRAME:
-                options["attributes"].setdefault("frame", "box")
-            elif options["hrules"] == RuleStyle.FRAME and options["vrules"] == RuleStyle.ALL:
-                options["attributes"].setdefault("frame", "box")
-                options["attributes"].setdefault("rules", "cols")
-            elif options["hrules"] == RuleStyle.FRAME:
-                options["attributes"].setdefault("frame", "hsides")
-            elif options["hrules"] == RuleStyle.ALL:
-                options["attributes"].setdefault("frame", "hsides")
-                options["attributes"].setdefault("rules", "rows")
-            elif options["vrules"] == RuleStyle.FRAME:
-                options["attributes"].setdefault("frame", "vsides")
-            elif options["vrules"] == RuleStyle.ALL:
-                options["attributes"].setdefault("frame", "vsides")
-                options["attributes"].setdefault("rules", "cols")
+            # RULES: all/cols/rows/groups/none
+            # FRAME: hsides/void/vsides
+
+            options["attributes"] = collections.OrderedDict(options.get("attributes", {}))
+            if options["hrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
+                if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
+                    options["attributes"].setdefault("frame", "box")
+                else:
+                    options["attributes"].setdefault("frame", "hsides")
+            else:
+                if options["vrules"] in (RuleStyle.ALL, RuleStyle.FRAME):
+                    options["attributes"].setdefault("frame", "vsides")
+                else:
+                    options["attributes"].setdefault("frame", "void")
+            if options["hrules"] == RuleStyle.ALL:
+                if options["vrules"] == RuleStyle.ALL:
+                    options["attributes"].setdefault("rules", "all")
+                else:
+                    options["attributes"].setdefault("rules", "rows")
+            else:
+                if options["vrules"] == RuleStyle.ALL:
+                    options["attributes"].setdefault("rules", "cols")
+                else:
+                    options["attributes"].setdefault("rules", "none")
         if options["attributes"]:
             for key, value in options["attributes"].items():
                 open_tag.append(" {}=\"{}\"".format(key, value))
