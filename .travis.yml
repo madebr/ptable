@@ -11,7 +11,7 @@ jobs:
 
 install:
     - python -m pip install -r req-dev.txt
-    - python -m pip install flake8 python-coveralls
+    - python -m pip install flake8
 
 before_script:
     # stop the build if there are Python syntax errors or undefined names
