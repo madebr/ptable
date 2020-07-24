@@ -2867,6 +2867,59 @@ class TestControlChars(unittest.TestCase):
             +----+"""), result)
 
 
+class TestCombiningChars(unittest.TestCase):
+    def testAccentAcute(self):
+        t = PrettyTable(["F"])
+        t.add_row(["\u0301e"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +---+
+            | F |
+            +---+
+            | \u0301e |
+            +---+"""), result)
+
+
+class TestHangul(unittest.TestCase):
+    def testAccentAcute(self):
+        t = PrettyTable(["F"])
+        t.add_row(["\uac00"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | F  |
+            +----+
+            | \uac00 |
+            +----+"""), result)
+
+
+class TestFullWidthLatinCharacters(unittest.TestCase):
+    def testAccentAcute(self):
+        t = PrettyTable(["\uff26"])
+        t.add_row(["d"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | \uff26 |
+            +----+
+            | d  |
+            +----+"""), result)
+
+
+class TestCJKSymols(unittest.TestCase):
+    def testAccentAcute(self):
+        t = PrettyTable(["\u3004"])
+        t.add_row(["d"])
+        result = t.get_string()
+        self.assertEqual(textwrap.dedent("""\
+            +----+
+            | \u3004 |
+            +----+
+            | d  |
+            +----+"""), result)
+
+
+
 class UnpaddedTableTest(unittest.TestCase):
     def create_table(self, *args, **kwargs):
         res = PrettyTable(*args, header=False, padding_width=0, **kwargs)
