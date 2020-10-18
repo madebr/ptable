@@ -8,8 +8,8 @@ ptable2 is a simple Python library designed to make it quick and easy to
 represent tabular data in visually appealing ASCII tables, originally
 forked from `PrettyTable <https://code.google.com/p/prettytable/>`_ .
 
-.. image:: https://travis-ci.org/madebr/ptable2.svg
-    :target: https://travis-ci.org/madebr/ptable2
+.. image:: https://travis-ci.com/madebr/ptable2.svg
+    :target: https://travis-ci.com/madebr/ptable2
     :alt: Build Status
 
 .. image:: https://landscape.io/github/madebr/ptable2/master/landscape.svg?style=flat
